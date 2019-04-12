@@ -1,5 +1,5 @@
 # simpleTodoList
-Created a simple todo list app using nodeJS, EJS and javascript.
+Created a simple todo list app using nodeJS, EJS, javascript, html and css.
 
 # Routes
 - /
