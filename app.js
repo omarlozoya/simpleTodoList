@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Item = require('./models/items');
+const List = require('./models/lists');
+const _ = require('lodash');
 const date = require(__dirname + '/date.js');
 const items = ['Buy Food', 'Cook Food', 'Eat Food'];
 const workItems = [];
@@ -11,7 +13,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static('public'));
 
-mongoose.connect('mongodb://localhost:27017/todolistDB', {useNewUrlParser: true});
+mongoose.connect('mongodb://localhost:27017/todolistDB', {useNewUrlParser: true, useFindAndModify: false});
 
 const newItem1 = new Item({
     name: 'Welcome to your todolist!'
@@ -49,40 +51,74 @@ app.get('/', (req, res) => {
                     console.log('Default items inserted into DB.');
                 }
             });
+            
             res.redirect('/');
         } else {
-            res.render("list", {listTitle: day, newListItem: foundItems })
+            res.render("list", {listTitle: "Today", newListItem: foundItems })
         }
     });
 });
 
 app.post('/', (req, res) => {
     const itemName = req.body.newItem;
-
+    const listName = req.body.list;
     const newItem = new Item({
         name: itemName
     });
 
-    newItem.save();
-    res.redirect('/');
+    if (listName === "Today") {
+        newItem.save();
+        res.redirect('/');
+    } else {
+      List.findOne({name: listName}, (err, foundList) => {
+        foundList.items.push(newItem);
+        foundList.save();
+        res.redirect('/' + listName);
+      }); 
+    }
 });
 
 app.post('/delete', (req, res) => {
     const itemID = req.body.checkbox;
-    Item.deleteOne({_id: itemID}, (err, callback) => {
-        if (!err) {
-            console.log('Item deleted');
-        } else {
-            console.log('Error. Item not deleted.');
-        }
-    });
-    res.redirect('/');
+    const listName = req.body.listName;
+
+    if (listName === 'Today') {
+        Item.findByIdAndRemove(itemID, (err) => {
+            if (!err) {
+                res.redirect('/');
+            }
+        });
+    } else {
+        List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: mongoose.Types.ObjectId(itemID)}}}, {safe: true, upsert: true}, function(err, foundList) {
+            if (!err) {
+                res.redirect('/' + listName);
+            } else {
+                console.log('err');
+            }
+        });
+    }
 });
 
-app.get('/:route', (req, res) => {
-    const customListName = req.params.route;
+app.get('/:newListName', (req, res) => {
+    const customListName = _.capitalize(req.params.newListName);
+    const day = date.getDate();
 
-    
+    List.findOne({name: customListName}, (err, results) => {
+        if (!err) {
+            if (!results) {
+            // Create a new list
+            const list = new List({
+                name: customListName,
+                items: defaultItems
+            });
+            list.save();
+            res.redirect('/' + customListName);
+            } else {
+                // Show an existing list
+                res.render('list', {listTitle: results.name, newListItem: results.items});
+            }
+        }
+    });
 });
 
 app.post('/work', (req, res) => {

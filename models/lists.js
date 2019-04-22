@@ -3,7 +3,7 @@ const Item = require('./items');
 
 const listSchema = mongoose.Schema({
     name: String,
-    items: [Item]
+    items: []
 });
 
 const List = module.exports = mongoose.model('List', listSchema);
