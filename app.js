@@ -25,26 +25,64 @@ const newItem3 = new Item({
     name: '<-- Hit this to delete an item.'
 });
 
+const defaultItems = [newItem1, newItem2, newItem3];
+
+// Item.insertMany(defaultItems, (err) => {
+//     if (err) {
+//         console.log('Error');
+//     } else {
+//         mongoose.connection.close();
+//         console.log('All items inserted into Item DB successfully.');
+//     }
+// });
 
 app.get('/', (req, res) => {
     const day = date.getDate();
-    res.render('list', {listTitle: day, newListItem: items});
+
+    Item.find({}, (err, foundItems) => {
+        if (foundItems.length === 0) {
+            Item.insertMany(defaultItems, (err) => {
+                if (err) {
+                    console.log('Error');
+                } else {
+                    mongoose.connection.close();
+                    console.log('Default items inserted into DB.');
+                }
+            });
+            res.redirect('/');
+        } else {
+            res.render("list", {listTitle: day, newListItem: foundItems })
+        }
+    });
 });
 
 app.post('/', (req, res) => {
-    const item = req.body.newItem;
+    const itemName = req.body.newItem;
 
-    if (req.body.list === "Work") {
-        workItems.push(item);
-        res.redirect('/work');
-    } else {
-        items.push(item);
-        res.redirect('/');
-    }
+    const newItem = new Item({
+        name: itemName
+    });
+
+    newItem.save();
+    res.redirect('/');
 });
 
-app.get('/work', (req, res) => {
-    res.render("list", {listTitle: "Work List", newListItem: workItems});
+app.post('/delete', (req, res) => {
+    const itemID = req.body.checkbox;
+    Item.deleteOne({_id: itemID}, (err, callback) => {
+        if (!err) {
+            console.log('Item deleted');
+        } else {
+            console.log('Error. Item not deleted.');
+        }
+    });
+    res.redirect('/');
+});
+
+app.get('/:route', (req, res) => {
+    const customListName = req.params.route;
+
+    
 });
 
 app.post('/work', (req, res) => {
