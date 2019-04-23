@@ -13,7 +13,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static('public'));
 
-mongoose.connect('mongodb://localhost:27017/todolistDB', {useNewUrlParser: true, useFindAndModify: false});
+mongoose.connect('mongodb+srv://admin_omar:Test123@cluster0-xcwwr.mongodb.net/todolistDB', {useNewUrlParser: true, useFindAndModify: false});
 
 const newItem1 = new Item({
     name: 'Welcome to your todolist!'
@@ -129,6 +129,6 @@ app.get('/about', (req, res) => {
     res.render("about");
 });
 
-app.listen(3000, () => {
+app.listen(process.env.PORT || 3000, () => {
     console.log("Server started on port 3000");
 });
